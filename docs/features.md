@@ -139,6 +139,111 @@ Permite ao jogador entender o estado do grupo de relance, sem precisar observar 
 
 ---
 
+### Contador de Unidades de IA no Servidor
+
+**O que é:**
+Exibir o número total de agentes de IA ativos na sessão, independente de fação ou grupo.
+
+**Por que:**
+Útil para criadores de missão e jogadores monitorarem a carga de IA em tempo real.
+
+**Viabilidade:** Alta — `s_aAllAgents` já contém todos os agentes. É só contar e exibir.
+
+**Implementação:**
+- Aproveitar `SCR_AIWorld.GetAllActiveAgents()` já implementado
+- Exibir contagem num `TextWidget` simples no HUD (elemento separado do Squad HUD)
+- Atualizar no mesmo tick do `AIMapGroups` (a cada 2s)
+
+---
+
+### Mostrar Todas as IAs no Mapa (independente de fação)
+
+**O que é:**
+Opção para exibir marcadores de **todas** as IAs no mapa, incluindo inimigos e neutros, não só aliados.
+
+**Por que:**
+Útil em missões de planejamento tático ou para criadores de missão. Funciona como um "radar de deus".
+
+**Viabilidade:** Alta — basta remover o filtro de fação no `Tick()` do `AIMapGroups` e usar a identidade correta por fação para cada grupo.
+
+**Observação:** Deve ser um toggle desabilitado por padrão nas configurações do mod — ativo quebraria o desafio de missões normais.
+
+**Implementação:**
+- Adicionar flag `m_bShowAllFactions` em `AIMapGroups`
+- Quando ativo, não filtrar por `playerFactionKey` — usar `ResolveIdentityForFaction()` para cada agente independente de fação
+- Expor como opção nas configurações do mod
+
+---
+
+### Configurações do Mod
+
+**O que é:**
+Interface para habilitar ou desabilitar features individualmente em runtime (menu de pausa ou tela de configuração).
+
+**Por que:**
+Conforme o mod cresce, usuários podem querer usar apenas partes dele sem conflito com outros mods.
+
+**Viabilidade:** Alta para toggles no editor de missão via atributos; Média para menu em runtime (requer UI própria).
+
+**Opções de implementação:**
+- **Atributos no editor** — expor toggles via `SCR_BaseModularGameModeComponent` (simples, sem UI extra)
+- **Menu em runtime** — criar painel de configurações no menu de pausa (mais trabalho, mais flexível)
+
+**Recomendação:** Implementar junto com a próxima feature grande que precisar de toggle (ex: "Mostrar todas as IAs").
+
+---
+
+### Seleção Individual de Unidade Slave
+
+**O que é:**
+Permitir ao jogador selecionar uma unidade específica do seu slave group para dar ordens individuais (mover para ponto, atacar alvo, etc.).
+
+**Por que:**
+O sistema atual trata o grupo como um bloco. Ordens individuais dão muito mais controle tático.
+
+**Viabilidade:** Média — depende do que a API de `SCR_AIGroup` expõe para comandos por agente individual.
+
+**Pré-requisitos antes de implementar:**
+- Investigar `SCR_AIGroup` e `AIAgent` para comandos individuais (waypoints, ordens de ataque)
+- Verificar se é possível destacar um agente do grupo temporariamente para receber ordens isoladas
+- Definir o fluxo de UI para seleção (clique no nome do HUD? tecla de atalho?)
+
+---
+
+### Comunicação com Grupos Aliados
+
+**O que é:**
+Enviar pedidos ou comandos a grupos aliados que não estão sob controle direto do jogador (solicitar apoio, ordenar avanço, etc.).
+
+**Por que:**
+Aumentaria significativamente as possibilidades táticas em missões com múltiplos grupos aliados.
+
+**Viabilidade:** Baixa — a API pode não permitir que grupos independentes recebam waypoints de um jogador que não é seu líder. Exige pesquisa aprofundada.
+
+**Pré-requisitos antes de implementar:**
+- Investigar se `AIGroup.AddWaypoint()` ou equivalente funciona em grupos que não pertencem ao jogador
+- Verificar restrições de autoridade em multiplayer (comandos de grupo podem ser server-side only)
+- Definir escopo mínimo viável (ex: apenas "mover para posição" antes de tentar comandos complexos)
+
+---
+
+### Controle de Navegação da IA Motorista
+
+**O que é:**
+Quando o jogador está em um veículo conduzido por uma unidade slave, replicar os inputs de movimento (W/A/S/D) do jogador para influenciar a direção da IA em tempo real.
+
+**Por que:**
+Daria ao jogador maior controle sobre a navegação sem precisar assumir o volante.
+
+**Viabilidade:** Baixa — a IA de veículo usa pathfinding e waypoints, não inputs diretos de teclado. Sobrescrever isso em tempo real tende a conflitar com o sistema nativo e gerar comportamento instável.
+
+**Pré-requisitos antes de implementar:**
+- Investigar se existe API para influenciar a velocidade/direção de um agente motorista por frame
+- Avaliar se `VehicleControllerComponent` expõe inputs programáticos
+- Considerar abordagem alternativa: atualizar o waypoint da IA continuamente na direção do input do jogador em vez de simular inputs de teclado
+
+---
+
 ### Compatibilidade com Coalition Mod
 
 **O que é:**
