@@ -1,0 +1,7 @@
+# Arma Reforger Workbench — arquivos gerados automaticamente
+resourceDatabase.rdb
+*.meta
+UserMaps.desc
+
+# Claude Code
+.claude/
